@@ -1,0 +1,3 @@
+[submodule "resources/modulus-makani"]
+	path = resources/modulus-makani
+	url = https://github.com/NVIDIA/modulus-makani.git
