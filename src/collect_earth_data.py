@@ -1,7 +1,8 @@
 import xarray as xr
 wb = xr.open_zarr('gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr')
-gc_era5_ex = xr.load_dataset('../data/datasets/dataset_source-era5_date-2022-01-01_res-1.0_levels-13_steps-01.nc')
-from datetime import datetime
+
+# gc_era5_ex = xr.load_dataset('../data/datasets/dataset_source-era5_date-2022-01-01_res-1.0_levels-13_steps-01.nc')
+# from datetime import datetime
 
 # now = datetime.now()
 # day = now.strftime("%Y-%m-%d")
