@@ -12,6 +12,9 @@ import numpy as np
 import os
 import sys
 
+from makani.models.networks.sfnonet import SphericalFourierNeuralOperatorNet as SFNO
+
+
 class XRDataset(torch.utils.data.Dataset):
     def __init__(self, device, dt, xr_data, dims=[], nlat=91, nlon=144, npres=11):
         self.dt = dt
@@ -118,15 +121,7 @@ def train_model(model, dataset, dataloader, optimizer, gscaler, scheduler=None, 
     return valid_loss
 
 
-def train(sfno_lib, training_data_file, dims, filter_type, spectral_transform, grid, epochs, num_layers, scale_factor, embed_dim):
-
-    if sfno_lib == 'makani':
-        # from makani, the wind with SpectralAttention
-        from makani.models.networks.sfnonet import SphericalFourierNeuralOperatorNet as SFNO
-    elif sfno_lib == 'torchharmonics':
-        # using torchharmonics from bonev et al. with SpectralConv2d
-        from torch_harmonics.examples.sfno import SphericalFourierNeuralOperatorNet as SFNO
-
+def train(training_data_file, dims, filter_type, spectral_transform, grid, epochs, num_layers, scale_factor, embed_dim):
     training_data = xr.load_dataset(training_data_file)
 
     enable_amp = False
@@ -150,15 +145,9 @@ def train(sfno_lib, training_data_file, dims, filter_type, spectral_transform, g
 
     channels = dataset.ncha
 
-    # if using SFNO from torchharmonics 
-    if sfno_lib == 'torch_harmonics':
-        model = SFNO(spectral_transform=spectral_transform, operator_type='driscoll-healy', img_size=(nlat, nlon), grid=grid,
-                    num_layers=num_layers, scale_factor=scale_factor, in_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
-                    pos_embed='latlon', use_mlp=False, activation_function = "relu", normalization_layer="layer_norm").to(device)
-    elif sfno_lib == 'makani':
-        model = SFNO(spectral_transform=spectral_transform, operator_type='dhconv', inp_shape=(nlat, nlon), out_shape=(nlat, nlon), model_grid_type=grid,
-                    num_layers=num_layers, scale_factor=scale_factor, inp_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
-                    pos_embed='direct', use_mlp=False, activation_function = "gelu", normalization_layer="layer_norm").to(device)
+    model = SFNO(spectral_transform=spectral_transform, operator_type='dhconv', inp_shape=(nlat, nlon), out_shape=(nlat, nlon), model_grid_type=grid,
+                num_layers=num_layers, scale_factor=scale_factor, inp_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
+                pos_embed='direct', use_mlp=False, activation_function = "gelu", normalization_layer="layer_norm").to(device)
 
     # set seed
     torch.manual_seed(333)
@@ -205,13 +194,7 @@ def finetune(model, device, trainset, nsteps, finetuning_epochs):
     return model, device, trainset
 
 
-def prepare(sfno_lib, training_data_file, dims, filter_type, spectral_transform, grid, epochs, num_layers, scale_factor, embed_dim):
-    if sfno_lib == 'makani':
-        # from makani, the wind with SpectralAttention
-        from makani.models.networks.sfnonet import SphericalFourierNeuralOperatorNet as SFNO
-    elif sfno_lib == 'torchharmonics':
-        # using torchharmonics from bonev et al. with SpectralConv2d
-        from torch_harmonics.examples.sfno import SphericalFourierNeuralOperatorNet as SFNO
+def prepare(training_data_file, dims, filter_type, spectral_transform, grid, epochs, num_layers, scale_factor, embed_dim):
 
     training_data = xr.load_dataset(training_data_file)
 
@@ -234,15 +217,9 @@ def prepare(sfno_lib, training_data_file, dims, filter_type, spectral_transform,
 
     channels = dataset.ncha
 
-    # if using SFNO from torchharmonics 
-    if sfno_lib == 'torch_harmonics':
-        model = SFNO(spectral_transform=spectral_transform, operator_type='driscoll-healy', img_size=(nlat, nlon), grid=grid,
-                    num_layers=num_layers, scale_factor=scale_factor, in_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
-                    pos_embed='latlon', use_mlp=False, activation_function = "relu", normalization_layer="layer_norm").to(device)
-    elif sfno_lib == 'makani':
-        model = SFNO(spectral_transform=spectral_transform, operator_type='dhconv', inp_shape=(nlat, nlon), out_shape=(nlat, nlon), model_grid_type=grid,
-                    num_layers=num_layers, scale_factor=scale_factor, inp_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
-                    pos_embed='direct', use_mlp=False, activation_function = "gelu", normalization_layer="layer_norm").to(device)
+    model = SFNO(spectral_transform=spectral_transform, operator_type='dhconv', inp_shape=(nlat, nlon), out_shape=(nlat, nlon), model_grid_type=grid,
+                num_layers=num_layers, scale_factor=scale_factor, inp_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
+                pos_embed='direct', use_mlp=False, activation_function = "gelu", normalization_layer="layer_norm").to(device)
 
     # set seed
     torch.manual_seed(333)
@@ -259,7 +236,8 @@ def experiment_training(model, device, trainset, nsteps, finetuning_epochs):
         trainset.dt = dt
         optimizer = torch.optim.Adam(model.parameters(), lr=1E-4, weight_decay=0.0)
         gscaler = amp.GradScaler(enabled=False)
-        scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1, total_iters=finetuning_epochs)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.1, patience=1, mode='min', threshold=0.1)
+        # scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1, total_iters=finetuning_epochs)
         train_model(model, trainset, dataloader, optimizer, gscaler, scheduler, nepochs=int(finetuning_epochs), nfuture=dt-1)
 
     # save model checkpoint (timestamp + parameters filename)
@@ -274,13 +252,6 @@ def experiment_training(model, device, trainset, nsteps, finetuning_epochs):
 
 
 def load(model_file_name, sfno_lib, training_data_file, dims, filter_type, spectral_transform, grid, epochs, num_layers, scale_factor, embed_dim):
-
-    if sfno_lib == 'makani':
-        # from makani, the wind with SpectralAttention
-        from makani.models.networks.sfnonet import SphericalFourierNeuralOperatorNet as SFNO
-    elif sfno_lib == 'torchharmonics':
-        # using torchharmonics from bonev et al. with SpectralConv2d
-        from torch_harmonics.examples.sfno import SphericalFourierNeuralOperatorNet as SFNO
 
     training_data = xr.load_dataset(training_data_file)
 
@@ -303,15 +274,9 @@ def load(model_file_name, sfno_lib, training_data_file, dims, filter_type, spect
 
     channels = dataset.ncha
 
-    # if using SFNO from torchharmonics 
-    if sfno_lib == 'torch_harmonics':
-        model = SFNO(spectral_transform=spectral_transform, operator_type='driscoll-healy', img_size=(nlat, nlon), grid=grid,
-                    num_layers=num_layers, scale_factor=scale_factor, in_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
-                    pos_embed='latlon', use_mlp=False, activation_function = "relu", normalization_layer="layer_norm").to(device)
-    elif sfno_lib == 'makani':
-        model = SFNO(spectral_transform=spectral_transform, operator_type='dhconv', inp_shape=(nlat, nlon), out_shape=(nlat, nlon), model_grid_type=grid,
-                    num_layers=num_layers, scale_factor=scale_factor, inp_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
-                    pos_embed='direct', use_mlp=False, activation_function = "gelu", normalization_layer="layer_norm").to(device)
+    model = SFNO(spectral_transform=spectral_transform, operator_type='dhconv', inp_shape=(nlat, nlon), out_shape=(nlat, nlon), model_grid_type=grid,
+                num_layers=num_layers, scale_factor=scale_factor, inp_chans=channels, out_chans=channels, embed_dim=embed_dim, big_skip=False,
+                pos_embed='direct', use_mlp=False, activation_function = "gelu", normalization_layer="layer_norm").to(device)
 
     # set seed
     torch.manual_seed(333)
@@ -410,35 +375,33 @@ def rollout(model, device, test_data_file, dims, nfuture, trainset):
 
 
 if __name__=="__main__":
-    # usage python3 ex3.py input_xr.nc test_xr.nc n_epochs
-    # main(training_data_file=sys.argv[1], test_data_file=sys.argv[2], spectral_transform='sht' ,grid="equiangular", epochs = 100, num_layers=100, scale_factor=3, embed_dim=256)
+    filter_type = sys.argv[1]
+    training_data_file=sys.argv[2]
+    test_data_file=sys.argv[3]
+    num_layers = int(sys.argv[4])
+    embed_dim = int(sys.argv[5])
+    nsteps = int(sys.argv[6])
+    epochs = int(sys.argv[7])
+    dims = sys.argv[8].split(',')
 
-    # dims= ['air_temperature', 'upward_air_velocity', 'geopotential_height', 'x_wind', 'y_wind']
-
-    sfno_lib = sys.argv[1]
-    filter_type = sys.argv[2]
-    training_data_file=sys.argv[3]
-    test_data_file=sys.argv[4]
-    epochs = int(sys.argv[5])
-    num_layers = int(sys.argv[6])
-    dims = sys.argv[7].split(',')
+    # forcings = 
 
     # model, device, dataset = train(sfno_lib=sfno_lib, training_data_file=training_data_file, dims=dims, filter_type=filter_type, spectral_transform='sht', grid='equiangular', epochs = epochs, num_layers=num_layers, scale_factor=1, embed_dim=512)
 
     # model, device, dataset = finetune(model=model, device=device, trainset=dataset, nsteps=5, finetuning_epochs=int(epochs/2))
 
-    model, device, dataset = prepare(sfno_lib=sfno_lib, training_data_file=training_data_file, dims=dims, filter_type=filter_type, spectral_transform='sht', grid='equiangular', 
-                                     epochs = epochs, num_layers=num_layers, scale_factor=1, embed_dim=512)
+    model, device, dataset = prepare(training_data_file=training_data_file, dims=dims, filter_type=filter_type, spectral_transform='sht', grid='equiangular', 
+                                     epochs = epochs, num_layers=num_layers, scale_factor=1, embed_dim=embed_dim)
 
-    model, device, dataset = experiment_training(model=model, device=device, trainset=dataset, nsteps=6, finetuning_epochs=int(epochs/2))
+    model, device, dataset = experiment_training(model=model, device=device, trainset=dataset, nsteps=nsteps, finetuning_epochs=epochs)
 
     print('experiment : ', sys.argv[0])
 
-    print('parameters : ', sfno_lib, filter_type, num_layers, epochs)
+    print('parameters : ', filter_type, num_layers, epochs)
 
     test(model, device, test_data_file=test_data_file, dims=dims, trainset=dataset)
     
-    rollout(model, device, test_data_file=test_data_file, dims=dims, nfuture=40, trainset=dataset)
+    rollout(model, device, test_data_file=test_data_file, dims=dims, nfuture=31*4, trainset=dataset)
 
     # main(training_data_file=sys.argv[1], test_data_file=sys.argv[2], spectral_transform='fft' , grid="none", epochs = 1, num_layers=10, scale_factor=3, embed_dim=256)
     # main(training_data_file=sys.argv[1], test_data_file=sys.argv[2], spectral_transform=sys.argv[3] ,epochs = sys.argv[3], num_layers=sys.argv[4], scale_factor=sys.argv[5], embed_dim=sys.argv[6])
