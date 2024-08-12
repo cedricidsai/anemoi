@@ -8,15 +8,15 @@ end = '2014-12-31'
 
 gt = xr.open_dataset('../data/earth_gt.nc')
 
+gt = gt.rename_dims({'level':'pressure'})
+gt = gt.rename_vars({'level':'pressure'})
+
 print(gt)
 
 bench = gt.sel(time=slice(start, end))
 
-bench = bench.swap_dims({'lat':'latitude'})
-bench = bench.swap_dims({'lon':'longitude'})
-
-bench = bench.rename_dims({'level':'pressure'})
-bench = bench.rename_vars({'level':'pressure'})
+# bench = bench.swap_dims({'lat':'latitude'})
+# bench = bench.swap_dims({'lon':'longitude'})
 
 bench = bench.drop_vars([ 'geopotential_at_surface',
  'land_sea_mask',
@@ -37,11 +37,6 @@ start = '2015-01-01'
 end = '2015-01-31'
 
 bench = gt.sel(time=slice(start, end))
-bench = bench.swap_dims({'lat':'latitude'})
-bench = bench.swap_dims({'lon':'longitude'})
-
-bench = bench.rename_dims({'level':'pressure'})
-bench = bench.rename_vars({'level':'pressure'})
 
 bench = bench.drop_vars([ 'geopotential_at_surface',
  'land_sea_mask',
