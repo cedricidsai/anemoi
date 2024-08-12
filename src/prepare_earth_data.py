@@ -8,6 +8,8 @@ end = '2014-12-31'
 
 gt = xr.open_dataset('../data/earth_gt.nc')
 
+print(gt)
+
 bench = gt.sel(time=slice(start, end))
 
 bench = bench.swap_dims({'lat':'latitude'})
