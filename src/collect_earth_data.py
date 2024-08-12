@@ -7,10 +7,12 @@ from datetime import datetime
 # day = now.strftime("%Y-%m-%d")
 # print(day)
 
+import numpy as np
+
 day = '2015-01-31'
 
 ground_truth = wb.sel(time=slice('2014-01-01', day))
-ground_truth = ground_truth.interp(longitude=gc_era5_ex.coords['lon'], latitude=gc_era5_ex.coords['lat'], kwargs={"fill_value": "extrapolate"})
+ground_truth = ground_truth.interp(longitude=np.arange(0,360), latitude=np.arange(-90,91), kwargs={"fill_value": "extrapolate"})
 ground_truth[[
  'geopotential_at_surface',
  'land_sea_mask',
@@ -26,4 +28,4 @@ ground_truth[[
  'u_component_of_wind',
  'v_component_of_wind',
  'vertical_velocity',
- 'specific_humidity']].to_netcdf('../data/era5_gt.nc')
+ 'specific_humidity']].to_netcdf('../data/earth_gt.nc')
