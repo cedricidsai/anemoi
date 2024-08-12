@@ -6,9 +6,9 @@ start = '2014-01-01'
 
 end = '2014-12-31'
 
-bench = xr.open_dataset('../data/datasets/era5_gt.nc')
+gt = xr.open_dataset('../data/earth_gt.nc')
 
-bench = bench.sel(time=slice(start, end))
+bench = gt.sel(time=slice(start, end))
 
 bench = bench.swap_dims({'lat':'latitude'})
 bench = bench.swap_dims({'lon':'longitude'})
@@ -26,7 +26,7 @@ bench = bench.drop_vars([ 'geopotential_at_surface',
  'specific_humidity'
  ])
 
-bench.to_netcdf('../data/earth_2014.nc')
+bench.to_netcdf('../data/earth_train.nc')
 
 print(bench)
 
@@ -34,9 +34,7 @@ start = '2015-01-01'
 
 end = '2015-01-31'
 
-bench = xr.open_dataset('../data/datasets/era5_gt.nc')
-
-bench = bench.sel(time=slice(start, end))
+bench = gt.sel(time=slice(start, end))
 bench = bench.swap_dims({'lat':'latitude'})
 bench = bench.swap_dims({'lon':'longitude'})
 
