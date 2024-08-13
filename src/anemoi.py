@@ -167,7 +167,7 @@ def train(training_data_file, dims, filter_type, spectral_transform, grid, epoch
 
     root_path = os.path.dirname(__file__)
 
-    torch.save(model.state_dict(), os.path.join(root_path, 'models/' + model_name))
+    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + model_name))
 
     return model, device, dataset
 
@@ -189,7 +189,7 @@ def finetune(model, device, trainset, nsteps, finetuning_epochs):
 
     root_path = os.path.dirname(__file__)
 
-    torch.save(model.state_dict(), os.path.join(root_path, 'models/' + model_name))
+    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + model_name))
 
     return model, device, trainset
 
@@ -246,7 +246,7 @@ def experiment_training(model, device, trainset, nsteps, finetuning_epochs):
 
     root_path = os.path.dirname(__file__)
 
-    torch.save(model.state_dict(), os.path.join(root_path, 'models/' + model_name))
+    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + model_name))
 
     return model, device, trainset
 
@@ -284,7 +284,7 @@ def load(model_file_name, sfno_lib, training_data_file, dims, filter_type, spect
 
     root_path = os.path.dirname(__file__)
 
-    ckpt = torch.load(os.path.join(root_path, 'models/' + model_file_name))
+    ckpt = torch.load(os.path.join(root_path, '../models/' + model_file_name))
     model.load_state_dict(ckpt)
 
     return model, device, dataset
@@ -358,7 +358,7 @@ def rollout(model, device, test_data_file, dims, nfuture, trainset):
 
     name = str(int(time.time())) + '.nc'
 
-    rollout.to_netcdf('rollouts/' + name)
+    rollout.to_netcdf('../rollouts/' + name)
 
             # print(xs.mse(ytar, yprd, dim=['lat','lon']))
 
