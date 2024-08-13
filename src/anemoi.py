@@ -167,7 +167,7 @@ def train(training_data_file, dims, filter_type, spectral_transform, grid, epoch
 
     root_path = os.path.dirname(__file__)
 
-    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + model_name))
+    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + filter_type + model_name))
 
     return model, device, dataset
 
@@ -189,7 +189,7 @@ def finetune(model, device, trainset, nsteps, finetuning_epochs):
 
     root_path = os.path.dirname(__file__)
 
-    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + model_name))
+    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + filter_type + model_name))
 
     return model, device, trainset
 
@@ -228,7 +228,7 @@ def prepare(training_data_file, dims, filter_type, spectral_transform, grid, epo
     return model, device, dataset
 
 
-def experiment_training(model, device, trainset, nsteps, finetuning_epochs):
+def experiment_training(model, device, trainset, filter_type, nsteps, finetuning_epochs):
     
     dataloader = DataLoader(trainset, batch_size=1, shuffle=True, num_workers=0, persistent_workers=False, drop_last=True)
 
@@ -246,7 +246,7 @@ def experiment_training(model, device, trainset, nsteps, finetuning_epochs):
 
     root_path = os.path.dirname(__file__)
 
-    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + model_name))
+    torch.save(model.state_dict(), os.path.join(root_path, '../models/' + filter_type + model_name))
 
     return model, device, trainset
 
@@ -284,7 +284,7 @@ def load(model_file_name, sfno_lib, training_data_file, dims, filter_type, spect
 
     root_path = os.path.dirname(__file__)
 
-    ckpt = torch.load(os.path.join(root_path, '../models/' + model_file_name))
+    ckpt = torch.load(os.path.join(root_path, '../models/' model_file_name))
     model.load_state_dict(ckpt)
 
     return model, device, dataset
@@ -393,7 +393,7 @@ if __name__=="__main__":
     model, device, dataset = prepare(training_data_file=training_data_file, dims=dims, filter_type=filter_type, spectral_transform='sht', grid='equiangular', 
                                      epochs = epochs, num_layers=num_layers, scale_factor=1, embed_dim=embed_dim)
 
-    model, device, dataset = experiment_training(model=model, device=device, trainset=dataset, nsteps=nsteps, finetuning_epochs=epochs)
+    model, device, dataset = experiment_training(model=model, device=device, trainset=dataset, filter_type=filter_type, nsteps=nsteps, finetuning_epochs=epochs)
 
     print('experiment : ', sys.argv[0])
 
