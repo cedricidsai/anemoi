@@ -16,4 +16,4 @@ source ~/.bashrc
 
 conda activate anemoi
 
-python3 anemoi.py non-linear ../data/earth_train.nc ../data_earth_test.nc 8 512 5 10 "air_temperature,upward_air_velocity,geopotential_height,x_wind,y_wind"
+python3 anemoi.py non-linear ../data/earth_train.nc ../data/earth_test.nc 8 512 5 10 "temperature,geopotential,vertical_velocity,u_component_of_wind,v_component_of_wind"
