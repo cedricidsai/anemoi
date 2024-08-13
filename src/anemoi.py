@@ -284,7 +284,7 @@ def load(model_file_name, sfno_lib, training_data_file, dims, filter_type, spect
 
     root_path = os.path.dirname(__file__)
 
-    ckpt = torch.load(os.path.join(root_path, '../models/' model_file_name))
+    ckpt = torch.load(os.path.join(root_path, '../models/'+ model_file_name))
     model.load_state_dict(ckpt)
 
     return model, device, dataset
