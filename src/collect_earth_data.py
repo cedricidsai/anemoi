@@ -12,7 +12,7 @@ import numpy as np
 
 day = '2015-01-31'
 
-degrees = 2
+degrees = 1
 
 ground_truth = wb.sel(time=slice('2014-01-01', day))
 ground_truth = ground_truth.interp(longitude=np.arange(0,360,degrees), latitude=np.arange(-90,91,degrees), kwargs={"fill_value": "extrapolate"})
@@ -31,4 +31,4 @@ ground_truth[[
  'u_component_of_wind',
  'v_component_of_wind',
  'vertical_velocity',
- 'specific_humidity']].to_netcdf('../data/earth_gt.nc')
+ 'specific_humidity']].to_netcdf('../data/earth_gt_%i.nc'%degrees)

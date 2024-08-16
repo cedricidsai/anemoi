@@ -3,10 +3,11 @@ import numpy as np
 
 
 start = '2014-01-01'
-
 end = '2014-12-31'
 
-gt = xr.open_dataset('../data/earth_gt.nc')
+degrees = 1
+
+gt = xr.open_dataset('../data/earth_gt_%i.nc'%degrees)
 
 gt = gt.rename_dims({'level':'pressure'})
 gt = gt.rename_vars({'level':'pressure'})
@@ -28,7 +29,7 @@ bench = bench.drop_vars([ 'geopotential_at_surface',
  'specific_humidity'
  ])
 
-bench.to_netcdf('../data/earth_train.nc')
+bench.to_netcdf('../data/earth_train_%i.nc'%degrees)
 
 print(bench)
 
@@ -48,7 +49,7 @@ bench = bench.drop_vars([ 'geopotential_at_surface',
  'specific_humidity'
  ])
 
-bench.to_netcdf('../data/earth_test.nc')
+bench.to_netcdf('../data/earth_test_%i.nc'%degrees)
 
 
 # toa = xr.open_mfdataset('../data/toa/toa_solar_radiation_2014.nc')
